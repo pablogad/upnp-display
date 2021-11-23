@@ -86,6 +86,13 @@ it:
 
     git clone https://github.com/hzeller/upnp-display.git
 
+Then compile the VFD library libpt6312. The Makefile expects to find the compiled
+library and the headers inside a subdirectory called libpt6312, it's strongly
+recommended to do so. If it is on another place you'll have to modify the Makefile.
+
+Follow the compilation instructions and don't forget to set up the pins
+of the Raspi used to connect to your PT6312 before compiling.
+
 Now change into the directory of the checked out source and simply compile it
 with `make`:
 
