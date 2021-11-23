@@ -84,16 +84,28 @@ it:
 
 .. Then check out the source:
 
-    git clone https://github.com/hzeller/upnp-display.git
+    git clone https://github.com/pablogad/upnp-display.git
 
-Then compile the VFD library libpt6312. The Makefile expects to find the compiled
-library and the headers inside a subdirectory called libpt6312, it's strongly
-recommended to do so. If it is on another place you'll have to modify the Makefile.
+.. And initialize submodules (libpt6312):
 
-Follow the compilation instructions and don't forget to set up the pins
-of the Raspi used to connect to your PT6312 before compiling.
+    git submodule update --init --recursive
 
-Now change into the directory of the checked out source and simply compile it
+Then compile the VFD library libpt6312. To do so, create a directory build inside
+libpt6312, cd into it and compile:
+
+    mkdir libpt6312/build && cd libpt6312/build
+    cmake ..
+    make
+    cd -
+
+The Makefile expects to find the compiled library and the headers inside a 
+subdirectory called libpt6312. If it is on another place you'll have to modify the
+Makefile of upnp-display.
+
+Follow the compilation instructions and don't forget to set up the GPIO pins
+of the Raspi used to connect to your PT6312 before compiling (DATA_IO, CLK and STB).
+
+Now change into the root directory of the checked out source and simply compile it
 with `make`:
 
     cd upnp-display
