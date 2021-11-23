@@ -91,10 +91,12 @@ it:
     git submodule update --init --recursive
 
 Then compile the VFD library libpt6312. To do so, create a directory build inside
-libpt6312, cd into it and:
+libpt6312, cd into it and compile:
 
-   cmake ..
-   make
+    mkdir libpt6312/build && cd libpt6312/build
+    cmake ..
+    make
+    cd -
 
 The Makefile expects to find the compiled library and the headers inside a 
 subdirectory called libpt6312. If it is on another place you'll have to modify the
