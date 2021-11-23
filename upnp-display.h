@@ -40,20 +40,11 @@ public:
 
   // Receive notification of new renderer added.
   virtual void AddRenderer(const std::string &uuid,
-                           const RendererState *state);
+                           RendererState *state);
   // Receive notification of renderer removed.
   virtual void RemoveRenderer(const std::string &uuid);
 
 private:
-  // Parse time from UPnP variable.
-  int parseTime(const std::string &upnp_time);
-
-  // Format time for display.
-  std::string formatTime(int time);
-
-  // Text formatting utility.
-  void CenterAlign(std::string *to_print, int width);
-  void RightAlign(std::string *to_print, int width);
 
   const std::string player_match_name_;
   Printer *const printer_;
@@ -61,7 +52,7 @@ private:
   ithread_mutex_t mutex_;
 
   std::string uuid_;
-  const RendererState *current_state_;
+  RendererState *current_state_;
 };
 
 #endif  // UPNP_DISPLAY_H

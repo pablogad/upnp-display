@@ -31,7 +31,7 @@ class ControllerObserver {
 public:
   virtual ~ControllerObserver() {}
   virtual void AddRenderer(const std::string &uuid,
-			   const RendererState *state) = 0;
+			   RendererState *state) = 0;
   virtual void RemoveRenderer(const std::string &uuid) = 0;
 };
 

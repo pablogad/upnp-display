@@ -71,10 +71,10 @@ void ControllerState::Register(const UpnpDiscovery *discovery) {
   ithread_mutex_lock(&mutex_);
   renderer = uuid2render_[uuid];
   if (renderer == NULL) {
-    renderer = new RendererState(UpnpDiscovery_get_Location_cstr(discovery));
+    renderer = new RendererState(device_, UpnpDiscovery_get_Location_cstr(discovery));
     uuid2render_[uuid] = renderer;
     if (renderer->InitDescription(UpnpDiscovery_get_Location_cstr(discovery))) {
-      renderer->SubscribeTo(device_, &subscription2render_);
+      renderer->SubscribeTo(&subscription2render_);
     }
     observer_->AddRenderer(uuid, renderer);
   }
@@ -128,3 +128,4 @@ int ControllerState::UpnpEventHandler(Upnp_EventType_e event,
   }
   return UPNP_E_SUCCESS;
 }
+

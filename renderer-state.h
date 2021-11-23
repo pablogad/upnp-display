@@ -32,7 +32,7 @@ class RendererState {
 public:
   typedef std::map<std::string, RendererState *> SubscriptionMap;
 
-  RendererState(const char *uuid);
+  RendererState(UpnpClient_Handle device_, const char *uuid);
   ~RendererState();
 
   // -- method calls interesting for users.
@@ -54,11 +54,19 @@ public:
   // Register interest in variables.
   // TODO: this needs to be handled by a subscription manager or something.
   // It breaks the encapsulation that this stores itself in the subscription_map.
-  bool SubscribeTo(UpnpClient_Handle upnp_controller,
-                   SubscriptionMap *subscription_map);
+  bool SubscribeTo(SubscriptionMap *subscription_map);
 
   // Callback from controller when changed variables arrive.
   void ReceiveEvent(const UpnpEvent *data);
+
+//PGAD
+void Play();
+void Pause();
+void Stop();
+void GetPositionInfo();
+
+int SendActionTest( int service_type, int action,
+          std::vector<std::pair<std::string, std::string>>& params );
 
 private:
   bool Subscribe(UpnpClient_Handle upnp_controller,
@@ -69,9 +77,13 @@ private:
   // requires variable_mutex_ to be locked.
   void DecodeMetaAndInsertData_Locked(const char *xml);
 
+  void SendActionParamInstance( int actionIndex );
+
+  UpnpClient_Handle upnp_controller;
   const std::string uuid_;
   std::string friendly_name_;
   std::string base_url_;
+  std::string control_url_;
 
   IXML_Document *descriptor_;      // owned. Initialized in InitDescription()
   SubscriptionMap *subscriptions_; // not owned. Initialized in SubscribeTo()

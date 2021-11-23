@@ -21,6 +21,7 @@
 #define OUT_GPIO(g) *(gpio_port_+((g)/10)) |=  (1<<(((g)%10)*3))
 #define SET_GPIO_ALT(g,a) *(gpio+(((g)/10))) |= (((a)<=3?(a)+4:(a)==4?3:2)<<(((g)%10)*3))
 
+#define GET_GPIO(g) (*(gpio+13)&(1<<g)) // 0 if LOW, (1<<g) if HIGH
 #define GPIO_SET *(gpio+7)  // sets   bits which are 1 ignores bits which are 0
 #define GPIO_CLR *(gpio+10) // clears bits which are 1 ignores bits which are 0
 
@@ -155,12 +156,26 @@ static void busy_wait_nanos_rpi_4(long nanos) {
 }
 
 // -- public interface
-GPIO::GPIO() : output_bits_(0), gpio_port_(NULL) {
+GPIO::GPIO() : input_bits_(0), output_bits_(0), gpio_port_(NULL) {}
+
+uint32_t GPIO::InitInputs(uint32_t inputs) {
+  if (gpio_port_ == NULL) {
+    fprintf(stderr, "Attempt to init inputs but not initialized.\n");
+    return 0;
+  }
+  inputs &= kValidBits;   // Sanitize input.
+  input_bits_ = inputs;
+  for (uint32_t b = 0; b < 27; ++b) {
+    if (inputs & (1 << b)) {
+      INP_GPIO(b);
+    }
+  }
+  return input_bits_;
 }
 
 uint32_t GPIO::InitOutputs(uint32_t outputs) {
   if (gpio_port_ == NULL) {
-    fprintf(stderr, "Attempt to init outputs but initialized.\n");
+    fprintf(stderr, "Attempt to init outputs but not initialized.\n");
     return 0;
   }
   outputs &= kValidBits;   // Sanitize input.
@@ -175,13 +190,17 @@ uint32_t GPIO::InitOutputs(uint32_t outputs) {
 }
 
 bool GPIO::Init() {
-  const RaspberryPiModel model = DetermineRaspberryModel();
-  gpio_port_ = mmap_bcm_register(GPIO_REGISTER_OFFSET);
-  switch (model) {
-  case PI_MODEL_1: busy_wait_impl_ = busy_wait_nanos_rpi_1; break;
-  case PI_MODEL_2: busy_wait_impl_ = busy_wait_nanos_rpi_2; break;
-  case PI_MODEL_3: busy_wait_impl_ = busy_wait_nanos_rpi_3; break;
-  case PI_MODEL_4: busy_wait_impl_ = busy_wait_nanos_rpi_4; break;
+
+  if (gpio_port_ == NULL) {
+    const RaspberryPiModel model = DetermineRaspberryModel();
+    gpio_port_ = mmap_bcm_register(GPIO_REGISTER_OFFSET);
+    switch (model) {
+    case PI_MODEL_1: busy_wait_impl_ = busy_wait_nanos_rpi_1; break;
+    case PI_MODEL_2: busy_wait_impl_ = busy_wait_nanos_rpi_2; break;
+    case PI_MODEL_3: busy_wait_impl_ = busy_wait_nanos_rpi_3; break;
+    case PI_MODEL_4: busy_wait_impl_ = busy_wait_nanos_rpi_4; break;
+    }
   }
   return gpio_port_ != NULL;
 }
+
