@@ -8,7 +8,7 @@ It listens for changes in the state of the player (Title, Album etc.,
 Play/Paused/Stop) and displays it on a common 16x2 LCD display or other
 HD44780 compatible displays.
 
-### Connect the Hardware
+### Connect the Hardware - LCD
 
 First, we need to connect the LCD display to the Raspberry Pi.
 You need
@@ -69,6 +69,48 @@ cables end up crossing over, all others are nicely sequenced.
 Now, plug this into the outer row of your Raspberry Pi GPIO:
 ![Connected][connected]
 
+### Connect the Hardware - VFD display
+
+This feature serves the purpose of reusing an old device VFD with a PT6312
+display controller. This chip is typically found on old DVD units. I found once
+three old DVDs in a trash bin and all of them used this chip.
+
+To connect the PT6312 VFD display controller to the Raspberry Pi, it's important
+to know that the PT6312 chip works with 5v power, while the raspberry PI works at 3v3.
+
+We need three GPIOs:
+
+   - **STB** can be connected directly (GPIO OUT --> STB), the 3v3 level will be
+      interpreted as a logic 1.
+   - **CLK** can be connected directly (GPIO OUT --> CLK).
+   - **DIO** bidirectional, **needs level conversion!**.
+
+The GPIO pin assignments are defined in the libpt6312 library, in the file
+vfd_interface.cc. By default they are as follows:
+
+```
+#define CLK     (1<<23)  // PIN 16 - CLK input for PT6312
+#define STB     (1<<24)  // PIN 18 - STROBE input for PT6312
+#define DIO     (1<<25)  // PIN 22 - DATA IN/OUT input/output for PT6312
+```
+
+Also, most DVDs have a remote control IR receiver, you can connect this to a GPIO
+with a resistor divider network and configure linux to receive commands (out of the
+scope of this project for now).
+
+```
+           10K
+   IR ---/\/\--+----> GPIO (IN)
+   (5v)        |        (3.3v)
+               R  20K
+               |
+              GND
+```
+
+In addition to show the play state on the display, this program also reads the keys
+connected to the PT6312 chip and control the playing state whith them:
+(e.g. PLAY/STOP/PAUSE/NEXT/PREV).
+
 ### Compile the program
 
 Here are the commands you need to execute on your Raspberry Pi shell.
@@ -85,6 +127,10 @@ it:
 .. Then check out the source:
 
     git clone https://github.com/pablogad/upnp-display.git
+
+.. Change to this branch (with VFD support):
+
+   git branch vfd_display_support
 
 .. And initialize submodules (libpt6312):
 
