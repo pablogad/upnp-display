@@ -16,15 +16,16 @@
 //  You should have received a copy of the GNU General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#include "renderer-state.h"
-
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <iostream>
 
 #include <upnp.h>
 #include <upnptools.h>
 #include <ithread.h>
+
+#include "renderer-state.h"
 
 // Prefix, as these can be followed by changing version number.
 static const char kTransportServicePrefix[] =
@@ -63,8 +64,9 @@ static const char *find_first_content(IXML_Document *doc, const char *name) {
   return result;
 }
 
-RendererState::RendererState(const char *uuid)
-  : uuid_(uuid), descriptor_(NULL), subscriptions_(NULL),
+RendererState::RendererState(UpnpClient_Handle device_, const char *uuid)
+  : upnp_controller(device_),
+    uuid_(uuid), descriptor_(NULL), subscriptions_(NULL),
     last_event_update_(time(NULL)) {
   ithread_mutex_init(&variable_mutex_, NULL);
 }
@@ -94,19 +96,22 @@ bool RendererState::InitDescription(const char *description_url) {
     }
   }
 
+  const char* control_url = find_first_content(descriptor_, "controlURL");
+  if (control_url)
+    control_url_ = control_url;
+
   const char *friendly_name = find_first_content(descriptor_, "friendlyName");
 
-  if (friendly_name) {
+  if (friendly_name)
     friendly_name_ = friendly_name;
-  }
+
   return true;
 }
 
 static bool prefixMatch(const char *str, const char *prefix) {
   return strncmp(str, prefix, strlen(prefix)) == 0;
 }
-bool RendererState::SubscribeTo(UpnpClient_Handle upnp_controller,
-                                SubscriptionMap *submap) {
+bool RendererState::SubscribeTo(SubscriptionMap *submap) {
   assert(descriptor_ != NULL);    // Needs to be initialized
 
   assert(subscriptions_ == NULL); // .. but not yet subscribed
@@ -280,3 +285,114 @@ void RendererState::ReceiveEvent(const UpnpEvent *data) {
   ixmlNodeList_free(variable_list);
   ixmlDocument_free(doc);
 }
+
+// Parameters
+static std::vector<std::pair<std::string, std::string>> paramInstance = {
+        { "InstanceID", "0" } };
+static std::vector<std::pair<std::string, std::string>> paramsPlay = {
+        { "InstanceID", "0" },
+        { "Speed", "1" } };
+
+static IXML_Document* response;
+
+void RendererState::GetPositionInfo() {
+
+   auto play_state = GetVar("TransportState");
+   if (play_state != "PLAYING") return;
+
+   int rc = SendActionTest( 0, 0, paramInstance );
+
+   if( rc == UPNP_E_SUCCESS ) {
+
+      const char* relTime = find_first_content( response, "RelTime" );
+      variables_["RelTime"] = relTime;
+   }
+
+   ixmlDocument_free(response);
+}
+
+void RendererState::SendActionParamInstance( int actionIndex ) {
+
+   SendActionTest( 0, actionIndex, paramInstance );
+
+   ixmlDocument_free(response);
+}
+
+void RendererState::Play() {
+
+   auto play_state = GetVar("TransportState");
+   if (play_state == "PLAYING") return;
+
+   SendActionParamInstance( 1 );
+}
+
+void RendererState::Pause() {
+
+   auto play_state = GetVar("TransportState");
+   if (play_state != "PLAYING") return;
+
+   SendActionParamInstance( 2 );
+}
+
+void RendererState::Stop() {
+
+   auto play_state = GetVar("TransportState");
+   if (play_state != "PLAYING") return;
+
+   SendActionParamInstance( 3 );
+}
+
+static std::array<std::string, 1> service_types = { "urn:schemas-upnp-org:service:AVTransport:1" };
+static std::array<std::string, 4> actions = { "GetPositionInfo", "Play", "Pause", "Stop" };
+
+int RendererState::SendActionTest( int service_type, int action,
+		std::vector<std::pair<std::string, std::string>>& params ) {
+
+   IXML_Document* doc = nullptr;
+   response = nullptr;
+
+   const char* service_str = service_types[ service_type ].c_str();
+   const char* action_str = actions[ action ].c_str();
+
+   if (params.empty())
+      doc = UpnpMakeAction(action_str, service_str, 0, nullptr);
+   else
+   for (std::pair<std::string,std::string>& param : params ) {
+
+      const char* paramName = param.first.c_str();
+      const char* paramValue = param.second.c_str();
+
+      if (UpnpAddToAction(&doc,
+               action_str,
+               service_str,
+               paramName,
+               paramValue) != UPNP_E_SUCCESS) {
+
+          printf("ERROR param %s,%s!\n", paramName, paramValue);
+      }
+   }
+
+   int rc = UPNP_E_INTERNAL_ERROR;
+
+   if( doc ) {
+
+      std::string action_url (base_url_);
+
+      // Remove last '/' if present to avoid duplication
+      if (action_url[ action_url.length() - 1] == '/')
+         action_url.pop_back();
+
+      action_url.append(control_url_);
+
+      rc = UpnpSendAction(upnp_controller,
+                    action_url.c_str(), service_str,
+                    nullptr, doc, &response);
+
+      ixmlDocument_free(doc);
+   }
+
+   //std::cout << "SendAction[" << action_str << "] : " << rc  << std::endl;
+
+   return rc;
+}
+

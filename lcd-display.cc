@@ -28,7 +28,8 @@
 #include "font-data.h"
 #include "utf8.h"
 
-GPIO gpio;
+// Defined in the VFD library (vfd_interface.cc)
+extern GPIO gpio;
 
 // According to datasheet, basic ops are typically ~37usec
 #define LCD_DISPLAY_OPERATION_WAIT_USEC 50
@@ -112,8 +113,7 @@ uint8_t LCDDisplay::FindCharacterFor(Codepoint cp, bool *register_new) {
   return new_char;
 }
 
-LCDDisplay::LCDDisplay(int width) : width_(width), initialized_(false),
-                                    next_free_special_(0) {
+LCDDisplay::LCDDisplay(const std::string& match_name, int width) : Printer(match_name), width_(width), next_free_special_(0) {
   memset(special_characters_, 0, sizeof(special_characters_));
 }
 

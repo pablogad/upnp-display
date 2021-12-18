@@ -27,7 +27,7 @@
 // connected to RPi GPIO pins.
 class LCDDisplay : public Printer {
 public:
-  LCDDisplay(int width);
+  LCDDisplay(const std::string& match_name, int width);
 
   // Call this first.
   bool Init();
@@ -37,7 +37,7 @@ public:
   // Print text in given line.
   virtual void Print(int line, const std::string &text);
 
-  virtual void SaveScreen();
+  void SaveScreen();
 
 private:
   typedef uint32_t Codepoint;

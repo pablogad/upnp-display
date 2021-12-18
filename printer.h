@@ -20,32 +20,62 @@
 
 #include <string>
 
+#include "renderer-state.h"
+#include "scroller.h"
+#include "utf8.h"
+
 // Interface for a simple display.
 class Printer {
 public:
-  virtual ~Printer() {}
 
-  virtual int width() const { return 16; }
+   Printer(const std::string& match_name) :
+	 player_match_name_(match_name),
+	 play_state("STOPPED"), track_time(0), muted(false), blink_time(0) {};
+   virtual ~Printer() {}
 
-  // Print line. The text is given in UTF-8, the printer has to attempt
-  // to try its best to display it.
-  virtual void Print(int line, const std::string &text) = 0;
+   virtual int width() const { return 16; }
 
-  // Put screen in sleep mode if possible.
-  virtual void SaveScreen() = 0;
+   // Print line. The text is given in UTF-8, the printer has to attempt
+   // to try its best to display it.
+   virtual void Print(int line, const std::string &text) = 0;
+   virtual void noRendererPrint();
+   virtual void rendererPrint( RendererState* current_state_ );
+   virtual void goodBye();
+   virtual void SaveScreen() {}
+
+   void fillVars(RendererState* state);
+
+protected:
+   const std::string& player_match_name_;
+   std::string player_name;
+   std::string title, composer, artist, album;
+   std::string play_state;
+   std::string volume, previous_volume;
+   int track_time;
+   int time;
+   bool muted;
+   Scroller first_line_scroller {"  -  "};
+   Scroller second_line_scroller {"  -  "};
+   int volume_countdown;
+   uint8_t blink_time;
+
+private:
+   int parseTime(const std::string &upnp_time);
+   std::string formatTime(int time);
+   void CenterAlign(std::string *to_print, int width);
+   void RightAlign(std::string *to_print, int width);
 };
 
 // Very simple implementation of the above, mostly for debugging. Just prints
 // stuff continuously.
 class ConsolePrinter : public Printer {
 public:
-  explicit ConsolePrinter(int width) : width_(width) {}
-  virtual int width() const { return width_; }
-  virtual void Print(int line, const std::string &text);
-  virtual void SaveScreen() {}
+   explicit ConsolePrinter(const std::string& match_name, int width) : Printer(match_name), width_(width) {}
+   virtual int width() const { return width_; }
+   virtual void Print(int line, const std::string &text);
 
 private:
-  const int width_;
+   const int width_;
 };
 
 #endif  // UPNP_DISPLAY_PRINTER_

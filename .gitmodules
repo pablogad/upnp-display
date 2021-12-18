@@ -1,0 +1,3 @@
+[submodule "libpt6312"]
+	path = libpt6312
+	url = https://github.com/pablogad/libpt6312.git

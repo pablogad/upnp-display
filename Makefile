@@ -1,12 +1,12 @@
 PREFIX=/usr/local
-LIBS=$(shell pkg-config --cflags --libs libupnp)
-INCLUDES=$(shell pkg-config --cflags libupnp)
+LIBS=$(shell pkg-config --cflags --libs libupnp) libpt6312/build/libpt6312.a
+INCLUDES=$(shell pkg-config --cflags libupnp) -Ilibpt6312
 
 OBJECTS=main.o upnp-display.o renderer-state.o printer.o controller-state.o \
-	lcd-display.o gpio.o scroller.o font-data.o
+	lcd-display.o vfd-display.o gpio.o scroller.o font-data.o
 
 CFLAGS=-g -O3 -Wall -W -Wextra $(INCLUDES) -D_FILE_OFFSET_BITS=64
-CXXFLAGS=$(CFLAGS) -std=c++03
+CXXFLAGS=$(CFLAGS) -std=c++17
 
 upnp-display: $(OBJECTS)
 	g++ -Wall $^ $(LIBS) -o $@

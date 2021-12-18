@@ -16,6 +16,10 @@ class GPIO {
   // (e.g. due to a permission problem).
   bool Init();
 
+  // Initialize inputs.
+  // Returns the bits that are actually set.
+  uint32_t InitInputs(uint32_t inputs);
+
   // Initialize outputs.
   // Returns the bits that are actually set.
   uint32_t InitOutputs(uint32_t outputs);
@@ -23,6 +27,11 @@ class GPIO {
   // Set the bits that are '1' in the output. Leave the rest untouched.
   inline void SetBits(uint32_t value) {
     gpio_port_[0x1C / sizeof(uint32_t)] = value;
+  }
+
+  // Get the bit input status of the bits that are '1' in the mask
+  inline uint32_t GetBits(uint32_t mask) {
+    return gpio_port_[13] & mask;
   }
 
   // Clear the bits that are '1' in the output. Leave the rest untouched.
@@ -42,6 +51,7 @@ class GPIO {
   }
 
  private:
+  uint32_t input_bits_;
   uint32_t output_bits_;
   volatile uint32_t *gpio_port_;
   void (*busy_wait_impl_)(long);

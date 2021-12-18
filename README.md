@@ -8,7 +8,7 @@ It listens for changes in the state of the player (Title, Album etc.,
 Play/Paused/Stop) and displays it on a common 16x2 LCD display or other
 HD44780 compatible displays.
 
-### Connect the Hardware
+### Connect the Hardware - LCD
 
 First, we need to connect the LCD display to the Raspberry Pi.
 You need
@@ -69,6 +69,52 @@ cables end up crossing over, all others are nicely sequenced.
 Now, plug this into the outer row of your Raspberry Pi GPIO:
 ![Connected][connected]
 
+### Connect the Hardware - VFD display
+
+This feature serves the purpose of reusing an old device VFD with a PT6312
+display controller. This chip is typically found on old DVD units. I found once
+three old DVDs in a trash bin and all of them used this chip.
+
+To connect the PT6312 VFD display controller to the Raspberry Pi, it's important
+to know that the PT6312 chip works with 5v power, while the raspberry PI works at 3v3.
+
+We need three GPIOs:
+
+   - **STB** can be connected directly (GPIO OUT --> STB), the 3v3 level will be
+      interpreted as a logic 1.
+   - **CLK** can be connected directly (GPIO OUT --> CLK).
+   - **DIO** bidirectional, **needs level conversion!**.
+
+The GPIO pin assignments are defined in the libpt6312 library, in the file
+vfd_interface.cc. By default they are as follows:
+
+```
+#define CLK     (1<<23)  // PIN 16 - CLK input for PT6312
+#define STB     (1<<24)  // PIN 18 - STROBE input for PT6312
+#define DIO     (1<<25)  // PIN 22 - DATA IN/OUT input/output for PT6312
+```
+
+Also, most DVDs have a remote control IR receiver, you can connect this to a GPIO
+with a resistor divider network and configure linux to receive commands (out of the
+scope of this project for now).
+
+```
+           10K
+   IR ---/\/\--+----> GPIO (IN)
+   (5v)        |        (3.3v)
+               R  20K
+               |
+              GND
+```
+
+In addition to show the play state on the display, this program also reads the keys
+connected to the PT6312 chip and control the playing state whith them:
+(e.g. PLAY/STOP/PAUSE/NEXT/PREV).
+
+![Raspi 1](images/image001.jpg)
+![Raspi 2](images/image002.jpg)
+![Raspi 3](images/image003.jpg)
+
 ### Compile the program
 
 Here are the commands you need to execute on your Raspberry Pi shell.
@@ -84,9 +130,32 @@ it:
 
 .. Then check out the source:
 
-    git clone https://github.com/hzeller/upnp-display.git
+    git clone https://github.com/pablogad/upnp-display.git
 
-Now change into the directory of the checked out source and simply compile it
+.. Change to this branch (with VFD support):
+
+   git branch vfd_display_support
+
+.. And initialize submodules (libpt6312):
+
+    git submodule update --init --recursive
+
+Then compile the VFD library libpt6312. To do so, create a directory build inside
+libpt6312, cd into it and compile:
+
+    mkdir libpt6312/build && cd libpt6312/build
+    cmake ..
+    make
+    cd -
+
+The Makefile expects to find the compiled library and the headers inside a 
+subdirectory called libpt6312. If it is on another place you'll have to modify the
+Makefile of upnp-display.
+
+Follow the compilation instructions and don't forget to set up the GPIO pins
+of the Raspi used to connect to your PT6312 before compiling (DATA_IO, CLK and STB).
+
+Now change into the root directory of the checked out source and simply compile it
 with `make`:
 
     cd upnp-display
@@ -104,7 +173,7 @@ choose "Interface Options").
 
 Simple; for an LCD with width 16, start the program as such:
 
-    upnp-display -w 16
+    upnp-display -l -w 16
 
 (Note, the program wants to run with realtime priority if possible to make
 sure the hardware timing talking to the LCD is correct. The program will
@@ -112,6 +181,13 @@ print a message if you need to do something about that).
 
 The LCD display should now print that it is waiting for any renderer;
 once it found a renderer, it will display the title/album playing.
+
+To display on the VFD display instead of LCD:
+
+    upnp-display -v <def_file>
+
+where def_file is the definition file for your particular VFD (refer to
+libpt6312 library documentation to see how to create this .def file).
 
 If you have multiple renderers in your network, you can select a particular
 one with the `-n` option:
@@ -128,7 +204,9 @@ in the same network, so you can have one display in every room :)
 ```
 Usage: ./upnp-display <options>
         -n <name or "uuid:"<uuid>: Connect to this renderer.
-        -w <display-width>       : Set display width.
+        -l                       : Use LCD display.
+        -w <display-width>       : Set LCD display width.
+        -v <display-def>         : Use VFD display with specified definition file.
         -d                       : Run as daemon.
         -c                       : On console instead LCD (debug).
         -s <timeout-seconds>     : Screensave after this time.
