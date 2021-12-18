@@ -123,7 +123,7 @@ choose "Interface Options").
 
 Simple; for an LCD with width 16, start the program as such:
 
-    upnp-display -w 16
+    upnp-display -l -w 16
 
 (Note, the program wants to run with realtime priority if possible to make
 sure the hardware timing talking to the LCD is correct. The program will
@@ -131,6 +131,13 @@ print a message if you need to do something about that).
 
 The LCD display should now print that it is waiting for any renderer;
 once it found a renderer, it will display the title/album playing.
+
+To display on the VFD display instead of LCD:
+
+    upnp-display -v <def_file>
+
+where def_file is the definition file for your particular VFD (refer to
+libpt6312 library documentation to see how to create this .def file).
 
 If you have multiple renderers in your network, you can select a particular
 one with the `-n` option:
@@ -147,7 +154,9 @@ in the same network, so you can have one display in every room :)
 ```
 Usage: ./upnp-display <options>
         -n <name or "uuid:"<uuid>: Connect to this renderer.
-        -w <display-width>       : Set display width.
+        -l                       : Use LCD display.
+        -w <display-width>       : Set LCD display width.
+        -v <display-def>         : Use VFD display with specified definition file.
         -d                       : Run as daemon.
         -c                       : On console instead LCD (debug).
         -s <timeout-seconds>     : Screensave after this time.
