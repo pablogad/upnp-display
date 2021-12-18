@@ -111,6 +111,10 @@ In addition to show the play state on the display, this program also reads the k
 connected to the PT6312 chip and control the playing state whith them:
 (e.g. PLAY/STOP/PAUSE/NEXT/PREV).
 
+![Raspi 1](images/image001.jpg)
+![Raspi 2](images/image002.jpg)
+![Raspi 3](images/image003.jpg)
+
 ### Compile the program
 
 Here are the commands you need to execute on your Raspberry Pi shell.
